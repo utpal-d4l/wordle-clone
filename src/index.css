@@ -1,13 +1,98 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+* {
+  box-sizing: border-box;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+body {
+  margin: 0;
+  font-family: 'Ubuntu', sans-serif;
+  --gray: rgba(0, 0, 0, 0.2);
+}
+
+.header {
+  font-size: 2rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.grid-section {
+  --rows: 0;
+  --cols: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 50px);
+  grid-template-rows: repeat(var(--rows), 50px);
+  gap: 5px;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.grid-item {
+  --fill-color: transparent;
+  height: 50px;
+  width: 50px;
+  border: 2px solid var(--gray);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  background-color: white;
+}
+
+.grid-item--filled {
+  border-color: black;
+  animation: scale-on-fill 50ms ease-in;
+}
+
+@keyframes scale-on-fill {
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.grid-item--final {
+  transition-property: color background-color border-color;
+  transition-duration: 50ms;
+  color: white;
+  border-color: var(--fill-color);
+  background-color: var(--fill-color);
+}
+
+.keyboard-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.keyboard-row > button {
+  border: none;
+  background-color: var(--gray);
+  height: 40px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 30px;
+  margin-inline: 0.25rem;
+}
+
+main {
+  outline: none;
+}
+
+.word-container {
+  position: absolute;
+  background-color: black;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+  color: white;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 600;
 }
