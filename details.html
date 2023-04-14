@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wordle Clone</title>
+  </head>
+  <body>
+    <h1>Wordle Clone</h1>
+    <h2>Description</h2>
+    <p>
+      Create a Wordle game where users have to guess the correct word for the
+      day.
+    </p>
+    <h3>Requirements</h3>
+    <ol>
+      <li>
+        Word will be 5 characters long (You can hardcode a list of words and
+        choose a random word as Word of the day)
+      </li>
+      <li>User will get 6 guesses to guess the correct word</li>
+      <li>
+        On each guess highlight the letters which are:
+        <ul>
+          <li>In correct place</li>
+          <li>Present in the word but not in correct place</li>
+          <li>Not present in the word</li>
+        </ul>
+      </li>
+      <li>
+        Display the keyboard on screen which can be used to enter the letters
+      </li>
+      <li>
+        Display the word once user has guessed the correct word or failed to
+        guess the word
+      </li>
+      <li>
+        User can user keyboard/on-screen keyboard for inputting the letters
+      </li>
+    </ol>
+    <h3>Source</h3>
+    <p>
+      You can checkout the game
+      <a href="https://www.nytimes.com/games/wordle/index.html" target="_blank"
+        >here</a
+      >.
+    </p>
+    <h2>Solution</h2>
+    <h3>State</h3>
+    <ol>
+      <li>
+        <code>todayWord</code>: Stores the today's word in
+        <code>useRef</code> as this will not be updated
+      </li>
+      <li>
+        <code>position</code>: An array of <code>[x, y]</code> indices used to
+        traverse the wordle grid
+      </li>
+      <li>
+        <code>gridState</code>: A <code>6x5</code> two dimensional array which
+        shows all the letters and state of each letter to display to user. Each
+        element can be an object representing the letter value and state of the
+        letter. For eg. <code>{letter: 'A', state: STATES.CORRECT}</code>. We
+        can either use <code>useState</code> or <code>useRef</code> to store
+        this data, but using <code>useRef</code> has an advantage that we can
+        directly mutate the state object and it will be re-rendered when
+        position updates.
+      </li>
+      <li>
+        <code>hasGuessed</code>: Value to represent the final state of the game.
+        It can have 3 values:
+        <ul>
+          <li>
+            <code>null</code>: This states that user has not guessed the word
+            yet but have some guesses left
+          </li>
+          <li>
+            <code>true</code>: This states that user has guessed the word
+            correctly
+          </li>
+          <li>
+            <code>false</code>: This states that user cannot guess anymore
+          </li>
+        </ul>
+      </li>
+    </ol>
+    <h3>Methods</h3>
+    <code>onPressKey</code>: This function is used to handle the user inputs
+    <ol>
+      <li>Checks if user has pressed correct key</li>
+      <li>
+        If user has pressed Enter then the input word is checked against the
+        Word of the day and status of letters are updated accordingly.
+      </li>
+      <li>
+        If user has pressed Backspace it deletes the last letter from the user
+        input
+      </li>
+      <li>
+        If user has pressed an alphabet key the input is update with the pressed
+        letter
+      </li>
+    </ol>
+    This function is reused for handling inputs through Keyboard and inputs
+    using on-screen keyboard.
+  </body>
+</html>
