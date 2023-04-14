@@ -148,26 +148,33 @@ function App() {
           const word = letters[row].map((item) => item.letter).join("");
           const wordMap = getWordMap(todayWord.current); // creating a map of count of letters in original word to compare with the word entered by user
           let matchCount = 0;
+          const nonMatchingIndices = [];
 
+          // updating state for matching chars first
           for (let i = 0; i < word.length; ++i) {
-            let letterState;
             const currentChar = word[i],
               currentActualChar = todayWord.current[i];
 
             if (currentChar === currentActualChar) {
-              letterState = STATES.CORRECT;
-              ++matchCount;
-            } else if (
-              wordMap.has(currentChar) &&
-              wordMap.get(currentChar) > 0
-            ) {
-              letterState = STATES.INCORRECT;
+              letters[row][i].state = STATES.CORRECT;
               wordMap.set(currentChar, wordMap.get(currentChar) - 1);
+              ++matchCount;
             } else {
-              letterState = STATES.INVALID;
+              nonMatchingIndices.push(i);
             }
-            letters[row][i].state = letterState;
           }
+
+          // updating state for rest of the chars
+          nonMatchingIndices.forEach((idx) => {
+            const char = word[idx];
+            if (wordMap.has(char) && wordMap.get(char) > 0) {
+              wordMap.set(char, wordMap.get(char) - 1);
+              letters[row][idx].state = STATES.INCORRECT;
+            } else {
+              letters[row][idx].state = STATES.INVALID;
+            }
+          });
+
           setPosition([row + 1, -1]); // moving on to next row
 
           if (matchCount === COLS) {
