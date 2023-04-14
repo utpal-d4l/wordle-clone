@@ -132,6 +132,7 @@ function App() {
   ); // using useRef as we won't have to create a new state for the grid state because we are already updating position
   const [position, setPosition] = useState([0, -1]); // current position in the grid
   const [hasGuessed, setHasGuessed] = useState(null); // state to handle final correct/incorrect state. null means the final state is not yet decided
+  const currentRow = position[0];
 
   const onPressKey = (e) => {
     if (hasGuessed !== null) return; // final state has been decided so return
@@ -143,6 +144,7 @@ function App() {
 
       if (e.key === "Enter") {
         if (col + 1 === COLS) {
+          if (document.activeElement) document.activeElement.blur(); // unfocusing the active element to avoid inputs while checking word
           const word = letters[row].map((item) => item.letter).join("");
           const wordMap = getWordMap(todayWord.current); // creating a map of count of letters in original word to compare with the word entered by user
           let matchCount = 0;
@@ -187,8 +189,8 @@ function App() {
   };
 
   useEffect(() => {
-    contentRef.current.focus(); // focusing the main element so that event can read key press events
-  }, []);
+    contentRef.current.focus(); // focusing the main element so that element can read key press events
+  }, [currentRow]);
 
   return (
     <main onKeyDown={onPressKey} tabIndex={-1} ref={contentRef}>
