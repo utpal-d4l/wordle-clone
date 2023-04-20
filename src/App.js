@@ -57,17 +57,40 @@ const getWordMap = (word = "") => {
   return map;
 };
 
-const Keyboard = ({ onPressKey = () => {} }) => {
+const getLetterIndex = (letter = "") => letter.toUpperCase().charCodeAt() - 65; // getting char code of letter and substracting code for 'A', so 'A' becomes 0, 'B' becomes 1 and so on
+
+const getInitialGridState = () =>
+  Array.from({ length: ROWS }, () =>
+    Array.from({ length: COLS }, () => ({
+      letter: "", // letter to display in each grid tile
+      state: STATES.INDETERMINATE, // the state of the letter
+    }))
+  );
+
+const getInitialKeyboardState = () => Array(26).fill(STATES.INDETERMINATE);
+
+const Keyboard = ({ onPressKey = () => {}, keyboardState = [] }) => {
   return (
     <section className="keyboard-section">
       {KEYBOARD_LAYOUT.map((row, rowIndex) => {
         return (
           <div className="keyboard-row" key={rowIndex}>
             {row.map((letter) => {
+              const idx = getLetterIndex(letter);
+              const showLetterState =
+                letter !== "Enter" &&
+                letter !== "Backspace" &&
+                keyboardState[idx] !== STATES.INDETERMINATE;
+
               return (
                 <button
                   key={letter}
                   onClick={() => onPressKey({ key: letter })} // sending the key press as the event so that same function can be reused
+                  style={{
+                    ...(showLetterState && {
+                      "--background-color": STATE_COLORS[keyboardState[idx]],
+                    }),
+                  }}
                 >
                   {letter === "Enter"
                     ? "ENTER"
@@ -122,77 +145,105 @@ const LetterBox = ({ letters = [] }) => {
 function App() {
   const todayWord = useRef(WORDS[Math.floor(Math.random() * WORDS.length)]); // word of the day
   const contentRef = useRef(); // ref to focus the content on mount so that keyboard events can be read
-  const gridState = useRef(
-    Array.from({ length: ROWS }, () =>
-      Array.from({ length: COLS }, () => ({
-        letter: "", // letter to display in each grid tile
-        state: STATES.INDETERMINATE, // the state of the letter
-      }))
-    )
-  ); // using useRef as we won't have to create a new state for the grid state because we are already updating position
+  const [gridState, setGridState] = useState(() => getInitialGridState()); // state to store grid lettes and their state
   const [position, setPosition] = useState([0, -1]); // current position in the grid
   const [hasGuessed, setHasGuessed] = useState(null); // state to handle final correct/incorrect state. null means the final state is not yet decided
+  const [keyboardState, setKeyboardState] = useState(() =>
+    getInitialKeyboardState()
+  ); // state to store the keyboard letter states, we will use an array of length 26 to store the states
   const currentRow = position[0];
+
+  const onEnterLetter = (letter = "") => {
+    const [row, col] = position;
+    const newGridState = Array.from(gridState); // creating a new grid to avoid mutating the existing one
+
+    if (col + 1 === COLS) return;
+    newGridState[row][col + 1].letter = letter.toUpperCase();
+    setPosition([row, col + 1]);
+    setGridState(newGridState);
+  };
+
+  const onPressBackspace = () => {
+    const [row, col] = position;
+    const newGridState = Array.from(gridState);
+
+    if (col === -1) return;
+    newGridState[row][col].letter = "";
+    setPosition([row, col - 1]);
+    setGridState(newGridState);
+  };
+
+  const onPressEnter = () => {
+    const [row, col] = position;
+    const newGridState = Array.from(gridState);
+    const newKeyboardState = Array.from(keyboardState);
+
+    if (col + 1 < COLS) return; // not enough letters in the row yet so return
+    if (document.activeElement) document.activeElement.blur(); // unfocusing the active element to avoid inputs while checking word
+
+    const word = gridState[row].map((item) => item.letter).join("");
+    const wordMap = getWordMap(todayWord.current); // creating a map of count of letters in original word to compare with the word entered by user
+    const nonMatchingIndices = [];
+    let matchCount = 0;
+
+    // updating state for matching chars first
+    for (let i = 0; i < word.length; ++i) {
+      const currentChar = word[i],
+        currentActualChar = todayWord.current[i];
+
+      if (currentChar === currentActualChar) {
+        newGridState[row][i].state = STATES.CORRECT;
+        newKeyboardState[getLetterIndex(currentChar)] = STATES.CORRECT;
+        wordMap.set(currentChar, wordMap.get(currentChar) - 1);
+        ++matchCount;
+      } else {
+        nonMatchingIndices.push(i);
+      }
+    }
+
+    // updating state for rest of the chars
+    nonMatchingIndices.forEach((idx) => {
+      const char = word[idx];
+      if (wordMap.has(char) && wordMap.get(char) > 0) {
+        wordMap.set(char, wordMap.get(char) - 1);
+        newGridState[row][idx].state = STATES.INCORRECT;
+        newKeyboardState[getLetterIndex(char)] = STATES.INCORRECT;
+      } else {
+        newGridState[row][idx].state = STATES.INVALID;
+        newKeyboardState[getLetterIndex(char)] = STATES.INVALID;
+      }
+    });
+
+    setPosition([row + 1, -1]); // moving on to next row
+    setGridState(newGridState);
+    setKeyboardState(newKeyboardState);
+
+    if (matchCount === COLS) {
+      setHasGuessed(true); // showing answer if word is guessed
+    } else if (row + 1 === ROWS) {
+      setHasGuessed(false); // showing answer if all the rows are full
+    }
+  };
 
   const onPressKey = (e) => {
     if (hasGuessed !== null) return; // final state has been decided so return
+    if (!isValidKey(e.key)) return; // invalid input from user so return
 
-    // check for valid key press
-    if (isValidKey(e.key)) {
-      const [row, col] = position;
-      const letters = gridState.current;
-
-      if (e.key === "Enter") {
-        if (col + 1 === COLS) {
-          if (document.activeElement) document.activeElement.blur(); // unfocusing the active element to avoid inputs while checking word
-          const word = letters[row].map((item) => item.letter).join("");
-          const wordMap = getWordMap(todayWord.current); // creating a map of count of letters in original word to compare with the word entered by user
-          let matchCount = 0;
-          const nonMatchingIndices = [];
-
-          // updating state for matching chars first
-          for (let i = 0; i < word.length; ++i) {
-            const currentChar = word[i],
-              currentActualChar = todayWord.current[i];
-
-            if (currentChar === currentActualChar) {
-              letters[row][i].state = STATES.CORRECT;
-              wordMap.set(currentChar, wordMap.get(currentChar) - 1);
-              ++matchCount;
-            } else {
-              nonMatchingIndices.push(i);
-            }
-          }
-
-          // updating state for rest of the chars
-          nonMatchingIndices.forEach((idx) => {
-            const char = word[idx];
-            if (wordMap.has(char) && wordMap.get(char) > 0) {
-              wordMap.set(char, wordMap.get(char) - 1);
-              letters[row][idx].state = STATES.INCORRECT;
-            } else {
-              letters[row][idx].state = STATES.INVALID;
-            }
-          });
-
-          setPosition([row + 1, -1]); // moving on to next row
-
-          if (matchCount === COLS) {
-            setHasGuessed(true); // showing answer if word is guessed
-          } else if (row + 1 === ROWS) {
-            setHasGuessed(false); // showing answer if all the rows are full
-          }
-        }
-      } else if (e.key === "Backspace") {
-        if (col === -1) return;
-        letters[row][col].letter = "";
-        setPosition([row, col - 1]);
-      } else {
-        if (col + 1 === COLS) return;
-        letters[row][col + 1].letter = e.key.toUpperCase();
-        setPosition([row, col + 1]);
-      }
+    if (e.key === "Enter") {
+      onPressEnter();
+    } else if (e.key === "Backspace") {
+      onPressBackspace();
+    } else {
+      onEnterLetter(e.key);
     }
+  };
+
+  const resetGame = () => {
+    todayWord.current = WORDS[Math.floor(Math.random() * WORDS.length)];
+    setGridState(getInitialGridState());
+    setPosition([0, -1]);
+    setHasGuessed(null);
+    setKeyboardState(getInitialGridState());
   };
 
   useEffect(() => {
@@ -201,14 +252,17 @@ function App() {
 
   return (
     <main onKeyDown={onPressKey} tabIndex={-1} ref={contentRef}>
-      <header className="header">
-        Wordle
-        {hasGuessed !== null && (
-          <div className="word-container">{todayWord.current}</div>
-        )}
-      </header>
-      <LetterBox letters={gridState.current} />
-      <Keyboard onPressKey={onPressKey} />
+      <header className="header">Wordle</header>
+      <LetterBox letters={gridState} />
+      <Keyboard onPressKey={onPressKey} keyboardState={keyboardState} />
+      {hasGuessed !== null && (
+        <div className="word-container">
+          {hasGuessed ? "Magnificent 🎉" : todayWord.current}
+          <button type="button" className="reset-button" onClick={resetGame}>
+            Reset
+          </button>
+        </div>
+      )}
     </main>
   );
 }

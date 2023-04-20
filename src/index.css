@@ -69,8 +69,9 @@ body {
 }
 
 .keyboard-row > button {
+  --background-color: var(--gray);
   border: none;
-  background-color: var(--gray);
+  background-color: var(--background-color);
   height: 40px;
   border-radius: 4px;
   font-weight: 600;
@@ -95,4 +96,22 @@ main {
   left: 50%;
   transform: translateX(-50%);
   font-weight: 600;
+  font-size: 1rem;
+  flex-direction: column;
+}
+
+.reset-button {
+  border: none;
+  background-color: black;
+  color: white;
+  height: 30px;
+  padding-inline: 0.5rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  margin-block-start: .5rem;
+  font-size: 1rem;
+  cursor: pointer;
 }
